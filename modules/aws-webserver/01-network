@@ -1,0 +1,54 @@
+# Create VPC
+resource "aws_vpc" "dev_vpc" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  tags = {
+    Name = "dev-vpc"
+  }
+}
+
+data "aws_availability_zones" "available" {}
+
+# private subnet configuration
+resource "aws_subnet" "private" {
+  vpc_id     = aws_vpc.dev_vpc.id
+  cidr_block = var.private_subnet["cidr"]
+  availability_zone = data.aws_availability_zones.available.names[1]
+  tags = {
+    Name = "private_subnet"
+  }
+  depends_on = [aws_internet_gateway.internet_gateway]
+}
+
+# public subnet configuration
+resource "aws_subnet" "public" {
+  vpc_id     = aws_vpc.dev_vpc.id
+  cidr_block = var.public_subnet["cidr"]
+  availability_zone = data.aws_availability_zones.available.names[1]
+  tags = {
+    Name = "public_subnet"
+  }
+  depends_on = [aws_internet_gateway.internet_gateway]
+}
+
+# Internet gateway configuration
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.dev_vpc.id
+  tags = {
+    Name = "internet_gateway"
+  }
+}
+
+# EIP for nat gateway
+resource "aws_eip" "nat_gateway" {
+  vpc = true
+}
+
+# Create Nat gatway for internet access to private subnet instances
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_gateway.id
+  subnet_id = aws_subnet.public.id
+  tags = {
+    "Name" = "nat_gateway"
+  }
+}
