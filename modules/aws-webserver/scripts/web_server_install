@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ -b /dev/xvdb ]] ; then
+    pvcreate /dev/xvdb
+    vgcreate logs /dev/xvdb
+    lvcreate -l 100%VG -n  logs_lvm logs
+    mkfs.xfs /dev/logs/logs_lvm
+    echo -e "/dev/logs/logs_lvm \t /var/log \t xfs \t defaults \t 0 0" | tee -a /etc/fstab
+    mount -a
+fi
+
+apt update
+apt install apache2 -y
+systemctl start apache2
+systemctl enable apache2
